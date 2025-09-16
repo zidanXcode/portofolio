@@ -71,7 +71,6 @@ export function InteractiveElements() {
               }
             )
 
-            // pastikan response OK
             if (!reposResponse.ok) {
               console.log(`Username ${username} not found (${reposResponse.status})`)
               continue
