@@ -1,7 +1,6 @@
 "use client"
 
-import type React from "react"
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -18,11 +17,12 @@ type GithubStats = {
 }
 
 export function InteractiveElements() {
-  const [visitorCount, setVisitorCount] = useState(0)
+  const [visitorCount, setVisitorCount] = useState<number>(0)
   const [githubStats, setGithubStats] = useState<GithubStats>({
     repos: 0,
     contributions: [],
   })
+  const [isLoadingGithub, setIsLoadingGithub] = useState<boolean>(true)
   const [isTypingGameActive, setIsTypingGameActive] = useState(false)
   const [typingText, setTypingText] = useState("")
   const [typingSpeed, setTypingSpeed] = useState(0)
@@ -31,25 +31,20 @@ export function InteractiveElements() {
 
   useEffect(() => {
     const trackVisitor = async () => {
-      const hasVisited = localStorage.getItem("hasVisited")
-
-      if (!hasVisited) {
-        try {
+      try {
+        const hasVisited = typeof window !== "undefined" && localStorage.getItem("hasVisited")
+        if (!hasVisited) {
           const response = await fetch("/api/visitors", { method: "POST" })
           const data = await response.json()
-          setVisitorCount(data.count)
+          setVisitorCount(Number(data?.count ?? 0))
           localStorage.setItem("hasVisited", "true")
-        } catch (error) {
-          console.error("Failed to track visitor:", error)
-        }
-      } else {
-        try {
+        } else {
           const response = await fetch("/api/visitors")
           const data = await response.json()
-          setVisitorCount(data.count)
-        } catch (error) {
-          console.error("Failed to get visitor count:", error)
+          setVisitorCount(Number(data?.count ?? 0))
         }
+      } catch (error) {
+        console.error("Failed to track visitor:", error)
       }
     }
 
@@ -58,29 +53,41 @@ export function InteractiveElements() {
 
   useEffect(() => {
     const fetchGitHubData = async () => {
+      setIsLoadingGithub(true)
       try {
         const possibleUsernames = ["zidanXcode"]
         let reposData: any[] | null = null
 
         for (const username of possibleUsernames) {
           try {
-            console.log(`[v0] Trying GitHub username: ${username}`)
-            const reposResponse = await fetch(`https://api.github.com/users/${username}/repos?per_page=100&type=all`, {
-              headers: {
-                Accept: "application/vnd.github.v3+json",
-                "User-Agent": "Portfolio-Website",
-              },
-            })
+            console.log(`Trying GitHub username: ${username}`)
+            const reposResponse = await fetch(
+              `https://api.github.com/users/${username}/repos?per_page=100&type=all`,
+              {
+                headers: {
+                  Accept: "application/vnd.github.v3+json",
+                  "User-Agent": "Portfolio-Website",
+                },
+              }
+            )
 
-            if (reposResponse.ok) {
-              reposData = await reposResponse.json()
-              console.log(`[v0] Successfully fetched data for ${username}:`, reposData.length, "repos")
-              break
-            } else {
-              console.log(`[v0] Username ${username} not found (${reposResponse.status})`)
+            // pastikan response OK
+            if (!reposResponse.ok) {
+              console.log(`Username ${username} not found (${reposResponse.status})`)
+              continue
             }
+
+            const json = await reposResponse.json()
+            if (!Array.isArray(json)) {
+              console.log(`Unexpected repos payload for ${username}:`, json)
+              continue
+            }
+
+            reposData = json
+            console.log(`Successfully fetched data for ${username}:`, reposData.length, "repos")
+            break
           } catch (error) {
-            console.log(`[v0] Error trying username ${username}:`, error)
+            console.log(`Error trying username ${username}:`, error)
             continue
           }
         }
@@ -93,18 +100,20 @@ export function InteractiveElements() {
             contributions,
           })
         } else {
-          console.log("[v0] Using fallback GitHub data")
+          console.log("Using fallback GitHub data")
           setGithubStats({
             repos: 2,
             contributions,
           })
         }
       } catch (error) {
-        console.error("[v0] Failed to fetch GitHub data:", error)
+        console.error("Failed to fetch GitHub data:", error)
         setGithubStats({
           repos: 2,
           contributions: generateRealisticContributions(),
         })
+      } finally {
+        setIsLoadingGithub(false)
       }
     }
 
@@ -140,7 +149,8 @@ export function InteractiveElements() {
     return () => window.removeEventListener("keydown", handleKeyPress)
   }, [konamiSequence])
 
-  const sampleText = "The quick brown fox jumps over the lazy dog. This pangram contains every letter of the alphabet."
+  const sampleText =
+    "The quick brown fox jumps over the lazy dog. This pangram contains every letter of the alphabet."
 
   const startTypingGame = () => {
     setIsTypingGameActive(true)
@@ -187,7 +197,7 @@ export function InteractiveElements() {
 
   const getContributionColor = (level: number) => {
     const colors = ["bg-muted/30", "bg-primary/20", "bg-primary/40", "bg-primary/60", "bg-primary/80"]
-    return colors[level]
+    return colors[Math.max(0, Math.min(level, colors.length - 1))]
   }
 
   return (
@@ -212,7 +222,9 @@ export function InteractiveElements() {
             <CardContent className="p-6 text-center">
               <Users className="w-12 h-12 text-primary mx-auto mb-4" />
               <h3 className="text-2xl font-bold text-card-foreground mb-2">GitHub</h3>
-              <div className="text-4xl font-mono text-primary mb-2">{githubStats.repos}</div>
+              <div className="text-4xl font-mono text-primary mb-2">
+                {isLoadingGithub ? "…" : githubStats.repos}
+              </div>
               <Badge variant="secondary">Live Repos</Badge>
             </CardContent>
           </Card>
@@ -310,7 +322,7 @@ export function InteractiveElements() {
         )}
 
         <div className="text-center text-sm text-muted-foreground">
-          <p>💡 Try the Konami Code: ↑↑↓↓←→←→BA</p>
+          <p>☁️✨ Try the Konami Code: ↑↑↓↓←→←→BA</p>
         </div>
       </div>
     </section>
