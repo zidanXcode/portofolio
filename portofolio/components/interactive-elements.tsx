@@ -1,16 +1,28 @@
 "use client"
 
 import type React from "react"
-
 import { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Eye, Users, Zap, Trophy, Gamepad2 } from "lucide-react"
 
+type Contribution = {
+  date: string
+  level: number
+}
+
+type GithubStats = {
+  repos: number
+  contributions: Contribution[]
+}
+
 export function InteractiveElements() {
   const [visitorCount, setVisitorCount] = useState(0)
-  const [githubStats, setGithubStats] = useState({ repos: 0, contributions: [] })
+  const [githubStats, setGithubStats] = useState<GithubStats>({
+    repos: 0,
+    contributions: [],
+  })
   const [isTypingGameActive, setIsTypingGameActive] = useState(false)
   const [typingText, setTypingText] = useState("")
   const [typingSpeed, setTypingSpeed] = useState(0)
@@ -47,8 +59,8 @@ export function InteractiveElements() {
   useEffect(() => {
     const fetchGitHubData = async () => {
       try {
-        const possibleUsernames = ["zidanXcode", "zidan-agum", "zidanagum"]
-        let reposData = null
+        const possibleUsernames = ["zidanXcode"]
+        let reposData: any[] | null = null
 
         for (const username of possibleUsernames) {
           try {
@@ -83,14 +95,14 @@ export function InteractiveElements() {
         } else {
           console.log("[v0] Using fallback GitHub data")
           setGithubStats({
-            repos: 2, // Your actual repo count
+            repos: 2,
             contributions,
           })
         }
       } catch (error) {
         console.error("[v0] Failed to fetch GitHub data:", error)
         setGithubStats({
-          repos: 2, // Your actual repo count as fallback
+          repos: 2,
           contributions: generateRealisticContributions(),
         })
       }
@@ -141,14 +153,14 @@ export function InteractiveElements() {
     setTypingText(input)
 
     if (input === sampleText) {
-      const wordsPerMinute = Math.round((sampleText.split(" ").length / 1) * 60) // Simplified calculation
+      const wordsPerMinute = Math.round((sampleText.split(" ").length / 1) * 60)
       setTypingSpeed(wordsPerMinute)
       setIsTypingGameActive(false)
     }
   }
 
-  const generateRealisticContributions = () => {
-    const contributions = []
+  const generateRealisticContributions = (): Contribution[] => {
+    const contributions: Contribution[] = []
     const today = new Date()
 
     for (let i = 364; i >= 0; i--) {
@@ -157,7 +169,7 @@ export function InteractiveElements() {
 
       const dayOfWeek = date.getDay()
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
-      const isHoliday = Math.random() < 0.1 // 10% chance of being a "holiday"
+      const isHoliday = Math.random() < 0.1
 
       let level = 0
       if (!isHoliday) {
