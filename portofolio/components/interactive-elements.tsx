@@ -20,16 +20,15 @@ export function InteractiveElements() {
   const [isTypingGameActive, setIsTypingGameActive] = useState(false)
   const [typingText, setTypingText] = useState("")
   const [typingSpeed, setTypingSpeed] = useState(0)
-  const [history, setHistory] = useState<number[]>([])
   const typingStartTime = useRef<number | null>(null)
 
   const konamiCode = [
-    "ArrowUp","ArrowUp","ArrowDown","ArrowDown",
-    "ArrowLeft","ArrowRight","ArrowLeft","ArrowRight","KeyB","KeyA",
+    "ArrowUp","ArrowUp","ArrowDown","ArrowDown","ArrowLeft","ArrowRight","ArrowLeft","ArrowRight","KeyB","KeyA",
   ]
   const konamiProgress = useRef<string[]>([])
   const [showEasterEgg, setShowEasterEgg] = useState(false)
 
+  // 🔹 Visitor Counter
   useEffect(() => {
     const fetchVisitors = async () => {
       try {
@@ -40,23 +39,25 @@ export function InteractiveElements() {
         setVisitorCount(Number(data?.count ?? 0))
         if (!hasVisited) localStorage.setItem("hasVisited", "true")
       } catch {
-        setVisitorCount(1)
+        setVisitorCount(1) // fallback
       }
     }
     fetchVisitors()
   }, [])
 
+  // 🔹 GitHub Stats
   useEffect(() => {
     const fetchGitHubData = async () => {
       setIsLoadingGithub(true)
       try {
         const username = "zidanXcode"
-        const res = await fetch(`https://api.github.com/users/${username}`, {
-          headers: { Accept: "application/vnd.github.v3+json" },
-        })
-        const data = res.ok ? await res.json() : {}
+        const res = await fetch(
+          `https://api.github.com/users/${username}/repos?per_page=100&type=all`,
+          { headers: { Accept: "application/vnd.github.v3+json" } }
+        )
+        const repos = res.ok ? await res.json() : []
         setGithubStats({
-          repos: Number(data?.public_repos ?? 0),
+          repos: Array.isArray(repos) ? repos.length : 0,
           contributions: generateRealisticContributions(),
         })
       } catch {
@@ -71,13 +72,11 @@ export function InteractiveElements() {
     fetchGitHubData()
   }, [])
 
+  // 🔹 Konami Code
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       konamiProgress.current = [...konamiProgress.current, e.code].slice(-10)
-      if (
-        konamiProgress.current.length === konamiCode.length &&
-        konamiCode.every((v, i) => konamiProgress.current[i] === v)
-      ) {
+      if (JSON.stringify(konamiProgress.current) === JSON.stringify(konamiCode)) {
         setShowEasterEgg(true)
         setTimeout(() => setShowEasterEgg(false), 5000)
         konamiProgress.current = []
@@ -87,6 +86,7 @@ export function InteractiveElements() {
     return () => window.removeEventListener("keydown", handler)
   }, [])
 
+  // 🔹 Typing Game
   const sampleText =
     "The quick brown fox jumps over the lazy dog. This pangram contains every letter of the alphabet."
 
@@ -104,13 +104,12 @@ export function InteractiveElements() {
     if (input === sampleText && typingStartTime.current) {
       const timeTaken = (Date.now() - typingStartTime.current) / 1000 / 60
       const words = sampleText.split(" ").length
-      const speed = Math.round(words / timeTaken)
-      setTypingSpeed(speed)
-      setHistory((prev) => [...prev, speed])
+      setTypingSpeed(Math.round(words / timeTaken))
       setIsTypingGameActive(false)
     }
   }
 
+  // 🔹 Contribution Generator
   const generateRealisticContributions = (): Contribution[] => {
     const today = new Date()
     return Array.from({ length: 365 }).map((_, i) => {
@@ -130,16 +129,11 @@ export function InteractiveElements() {
   }
 
   const getContributionColor = (level: number) => {
-    const colors = [
-      "bg-muted/30",
-      "bg-primary/20",
-      "bg-primary/40",
-      "bg-primary/60",
-      "bg-primary/80",
-    ]
+    const colors = ["bg-muted/30","bg-primary/20","bg-primary/40","bg-primary/60","bg-primary/80"]
     return colors[Math.min(level, colors.length - 1)]
   }
 
+  // 🔹 Skeleton Loader
   const LoaderSkeleton = () => (
     <div className="w-20 h-8 mx-auto bg-muted rounded animate-pulse" />
   )
@@ -147,14 +141,13 @@ export function InteractiveElements() {
   return (
     <section className="py-20 px-4 bg-background">
       <div className="max-w-6xl mx-auto space-y-12">
+        {/* Header */}
         <div className="text-center">
           <h2 className="text-4xl md:text-5xl font-bold mb-3">Interactive Zone</h2>
-          <p className="text-muted-foreground text-lg">
-            Fun elements and hidden features
-          </p>
+          <p className="text-muted-foreground text-lg">Fun elements and hidden features</p>
         </div>
 
-        {/* Stats Section */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {[
             { icon: Eye, label: "Visitors", value: visitorCount, badge: "Live Counter" },
@@ -168,7 +161,7 @@ export function InteractiveElements() {
             >
               <Card className="bg-card border-primary/20">
                 <CardContent className="p-6 text-center">
-                  <Icon aria-label={label} className="w-12 h-12 text-primary mx-auto mb-4" />
+                  <Icon className="w-12 h-12 text-primary mx-auto mb-4" />
                   <h3 className="text-2xl font-bold mb-2">{label}</h3>
                   <div className="text-4xl font-mono text-primary mb-2">
                     {value === null ? <LoaderSkeleton /> : value}
@@ -180,11 +173,11 @@ export function InteractiveElements() {
           ))}
         </div>
 
-        {/* Contribution Activity */}
+        {/* Contributions */}
         <Card className="bg-card border-primary/20">
           <CardContent className="p-6">
             <h3 className="text-xl font-bold flex items-center gap-2 mb-4">
-              <Zap aria-label="GitHub Contribution" className="w-6 h-6 text-primary" />
+              <Zap className="w-6 h-6 text-primary" />
               GitHub Contribution Activity
             </h3>
             {isLoadingGithub ? (
@@ -207,11 +200,11 @@ export function InteractiveElements() {
           </CardContent>
         </Card>
 
-        {/* Typing Speed Test */}
+        {/* Typing Test */}
         <Card className="bg-card border-primary/20">
           <CardContent className="p-6">
             <h3 className="text-xl font-bold flex items-center gap-2 mb-4">
-              <Gamepad2 aria-label="Typing Speed Test" className="w-6 h-6 text-primary" />
+              <Gamepad2 className="w-6 h-6 text-primary" />
               Typing Speed Test
             </h3>
             {!isTypingGameActive ? (
@@ -220,15 +213,10 @@ export function InteractiveElements() {
                   Start Test
                 </Button>
                 {typingSpeed > 0 && (
-                  <div className="mt-4 space-y-2">
+                  <div className="mt-4">
                     <Badge variant="secondary" className="text-lg px-4 py-2">
                       Last Speed: {typingSpeed} WPM
                     </Badge>
-                    {history.length > 1 && (
-                      <p className="text-sm text-muted-foreground">
-                        Best: {Math.max(...history)} WPM | Attempts: {history.length}
-                      </p>
-                    )}
                   </div>
                 )}
               </div>
