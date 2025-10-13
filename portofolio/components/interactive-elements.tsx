@@ -91,7 +91,6 @@ export function InteractiveElements() {
             setLoadingGithub(false)
           }
         } catch {
-          // ignore cache parse errors
         }
 
         const userRes = await fetchWithTimeout(`https://api.github.com/users/${username}`, {
@@ -135,7 +134,6 @@ export function InteractiveElements() {
         try {
           localStorage.setItem("githubStats", JSON.stringify(stats))
         } catch {
-          // ignore localStorage errors
         }
 
         const lvl = Math.min(100, Math.round(stats.repos * 8 + stats.followers * 1.5 + stats.stars * 0.5))
