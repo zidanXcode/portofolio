@@ -1,13 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
-    ignoreDuringBuilds: false, // Removing ignore flags to catch real build errors
+    ignoreDuringBuilds: false, 
   },
   typescript: {
-    ignoreBuildErrors: false, // Removing ignore flags to catch real build errors
+    ignoreBuildErrors: false, 
   },
   images: {
-    unoptimized: false, // Removing unoptimized flag for better performance on Vercel
+    unoptimized: false, 
     remotePatterns: [
       {
         protocol: 'https',
